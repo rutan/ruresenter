@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta charset="utf-8">
+<title></title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        background: #333;
+        color: #fff;
+    }
+    .container {
+        padding: 0;
+        line-height: 1.5;
+        margin: 0 auto;
+        width: 80%;
+        max-width: 40em;
+    }
+    .switch {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 48px;
+        height: 48px;
+        background: rgba(51, 51, 51, .8);
+        color: #fff;
+        border: 0;
+        font-size: 36px;
+    }
+</style>
+</head>
+<body>
+    <div id="container" class="container">
+    </div>
+    <button id="switch" class="switch">
+        ○
+    </button>
+    <script>
+        var params = {};
+        var containerElement = document.getElementById('container');
+        var switchElement = document.getElementById('switch');
+
+        var startFlag = false;
+        switchElement.addEventListener('click', function (e) {
+            e.preventDefault();
+            speed = document.body.clientHeight / params.total_time / 60;
+            startFlag = !startFlag;
+            if (startFlag) {
+                switchElement.innerText = "✕";
+            } else {
+                switchElement.innerText = "○";
+            }
+        });
+
+        var speed = 0.1;
+        var loadGist = function (res) {
+            console.log(res);
+            var files = res.data.files;
+            var content = '';
+            Object.keys(files).forEach(function (key) {
+                content += files[key].content;
+                content += "\n";
+            });
+            containerElement.innerText = content;
+            runScroll();
+        };
+
+        var isMoving = function () {
+            return startFlag;
+        };
+
+        var position = 0;
+        var runScroll = function () {
+            if (isMoving()) {
+                if (~~position != window.scrollY) {
+                    position = window.scrollY;
+                } else {
+                    position += speed;
+                }
+                window.scrollTo(0, ~~position);
+            }
+            setTimeout(runScroll, 16);
+        };
+
+        (function () {
+            location.search.slice(1).split('&').forEach(function (line) {
+                var set = line.split('=');
+                params[set[0]] = set[1];
+            });
+            if (!params.gist_id) return;
+            params.total_time = ~~(params.total_time || 300);
+            params.line = ~~(params.line || 15);
+            containerElement.style.fontSize = '' + (window.innerHeight / (params.line * 1.5)) + 'px';
+            containerElement.style.marginTop =
+                containerElement.style.marginBottom = '' + window.innerHeight + 'px';
+            var script = document.createElement('script');
+            var url = 'https://api.github.com/gists/' + encodeURIComponent(params.gist_id) + '?callback=loadGist';
+            if (params.token) {
+                url += '&access_token=' + encodeURIComponent(params.token);
+            }
+            script.setAttribute('src', url);
+            document.body.appendChild(script);
+        })();
+    </script>
+</body>
+</html>
